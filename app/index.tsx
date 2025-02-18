@@ -95,7 +95,7 @@ export default function Index() {
           keyExtractor={(item) => item.recordid}
           bounces={false}
           showsVerticalScrollIndicator={false}
-          contentContainerClassName="flex gap-5 mt-5"
+          contentContainerClassName="flex gap-5 mt-8"
         />
       )}
     </SafeAreaView>
@@ -131,17 +131,27 @@ const PointOfSale = ({ fields }: { fields: Fields }) => {
         ))}
       </View>
 
-      <View className="mt-8 flex flex-row gap-2 flex-wrap">
-        {fields.services_service &&
-          fields.services_service.split("//").map((service) => (
-            <Text
-              key={service}
-              className="text-sm py-1 px-2 rounded-xl border border-primary-300"
-            >
-              {service}
-            </Text>
-          ))}
-      </View>
+      <Services services={fields.services_service} />
     </View>
+  );
+};
+
+const Services = ({ services }: { services: string | undefined }) => {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="mt-8"
+    >
+      {services &&
+        services.split("//").map((service, index) => (
+          <View
+            key={index}
+            className="flex flex-col items-start mr-4 px-4 py-2 rounded-full bg-primary-100 border border-primary-200"
+          >
+            <Text className="text-sm text-black-300">{service}</Text>
+          </View>
+        ))}
+    </ScrollView>
   );
 };
