@@ -130,7 +130,7 @@ const PointOfSale = ({ fields }: { fields: Fields }) => {
           >
             <Text className="text-xl font-rubik-bold">{prix["@valeur"]}€</Text>
             <Text className="text-sm">{prix["@nom"]}</Text>
-            <Text className="text-xs">{timeAgo(prix["@maj"])}</Text>
+            <PriceUpdate updatedAt={prix["@maj"]} />
           </View>
         ))}
       </View>
@@ -140,6 +140,21 @@ const PointOfSale = ({ fields }: { fields: Fields }) => {
       <Services services={fields.services_service} />
     </View>
   );
+};
+
+const PriceUpdate = ({ updatedAt }: { updatedAt: string }) => {
+  const updatedAtString = timeAgo(updatedAt);
+  const isUpdatedSeveralDaysAgo = updatedAtString.split(" ").at(-1) === "jours";
+  const isUpdatedMoreThan5DaysAgo =
+    parseInt(updatedAtString.split(" ").at(-2)!) >= 5;
+
+  let className = "";
+
+  if (isUpdatedSeveralDaysAgo && isUpdatedMoreThan5DaysAgo) {
+    className = "text-red-800";
+  }
+
+  return <Text className={`text-xs ${className}`}>{updatedAtString}</Text>;
 };
 
 const Services = ({ services }: { services: string | undefined }) => {
