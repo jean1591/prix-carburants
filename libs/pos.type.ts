@@ -66,3 +66,20 @@ export interface Geometry {
   type: string;
   coordinates: number[];
 }
+
+export interface OpeningHours {
+  "@automate-24-24": string;
+  jour: Jour[];
+}
+
+export interface Jour {
+  "@id": string;
+  "@nom": string;
+  "@ferme": string;
+  horaire?: Horaire[];
+}
+
+export interface Horaire {
+  "@ouverture": string;
+  "@fermeture": string;
+}

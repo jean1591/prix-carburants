@@ -1,6 +1,10 @@
 import * as Location from "expo-location";
 
-import { Fields, Response } from "@/libs/pos.type";
+import {
+  Fields,
+  OpeningHours as OpeningHoursType,
+  Response,
+} from "@/libs/pos.type";
 import { FlatList, ScrollView, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
@@ -131,6 +135,8 @@ const PointOfSale = ({ fields }: { fields: Fields }) => {
         ))}
       </View>
 
+      <OpeningHours openingHours={fields.horaires} />
+
       <Services services={fields.services_service} />
     </View>
   );
@@ -153,5 +159,68 @@ const Services = ({ services }: { services: string | undefined }) => {
           </View>
         ))}
     </ScrollView>
+  );
+};
+
+const OpeningHours = ({
+  openingHours,
+}: {
+  openingHours: string | undefined;
+}) => {
+  if (!openingHours) {
+    return;
+  }
+
+  const times = JSON.parse(openingHours) as OpeningHoursType;
+
+  if (!times.jour) {
+    return;
+  }
+
+  return (
+    <View className="mt-8">
+      {times.jour.map((jour) => (
+        <View key={jour["@id"]} className="mb-2 flex flex-row justify-between">
+          <Text>{jour["@nom"]}</Text>
+
+          {jour.horaire && Array.isArray(jour.horaire) && (
+            <View className="flex flex-col justify-end">
+              {jour.horaire.map((hours) => (
+                <DisplayedOpeningHours
+                  key={hours["@ouverture"]}
+                  openingHours={hours}
+                />
+              ))}
+            </View>
+          )}
+
+          {jour.horaire &&
+            typeof jour.horaire === "object" &&
+            !Array.isArray(jour.horaire) && (
+              <View className="flex flex-col gap-2 justify-end">
+                <DisplayedOpeningHours
+                  key={jour.horaire["@ouverture"]}
+                  openingHours={jour.horaire}
+                />
+              </View>
+            )}
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const DisplayedOpeningHours = ({
+  openingHours,
+}: {
+  openingHours: { "@ouverture": string; "@fermeture": string };
+}) => {
+  const open = openingHours["@ouverture"].replace(".", ":");
+  const close = openingHours["@fermeture"].replace(".", ":");
+
+  return (
+    <Text>
+      {open} - {close}
+    </Text>
   );
 };
