@@ -18,8 +18,10 @@ import { useEffect, useState } from "react";
 
 import NoResults from "@/components/NoResults";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getPosByLatitudeAndLongitude } from "@/libs/getPos";
+import { ValidParams } from "@/libs/getPos.type";
+import { getPos } from "@/libs/getPos";
 import icons from "@/constants/icons";
+import { useDebouncedCallback } from "use-debounce";
 
 const formatDistance = (distance: string): string => {
   const match = distance.match(/^\d+\.?\d*/);
@@ -55,6 +57,7 @@ const timeAgo = (dateString: string): string => {
 
 export default function Index() {
   const [loading, setLoading] = useState<boolean>(false);
+  const [city, setCity] = useState<string>();
   const [location, setLocation] = useState<
     { latitude: number; longitude: number } | undefined
   >({ latitude: 43.4844836, longitude: -1.5473273 });
@@ -81,15 +84,39 @@ export default function Index() {
   }, []); */
 
   useEffect(() => {
-    const getData = async (latitude: number, longitude: number) => {
-      const pos = await getPosByLatitudeAndLongitude(latitude, longitude);
+    const getData = async (params: ValidParams) => {
+      let pos: PosResponse | undefined = undefined;
+
+      if (params.coordinates) {
+        const {
+          coordinates: { latitude, longitude },
+        } = params;
+
+        pos = await getPos({ coordinates: { latitude, longitude } });
+      }
+
+      if (params.city) {
+        const { city } = params;
+
+        pos = await getPos({ city });
+      }
 
       setPointsOfSale(pos);
     };
 
     if (location && location.latitude && location.longitude) {
       setLoading(true);
-      getData(location.latitude, location.longitude);
+      getData({
+        coordinates: {
+          latitude: location.latitude,
+          longitude: location.longitude,
+        },
+      });
+    }
+
+    if (city) {
+      setLoading(true);
+      getData({ city });
     }
 
     setLoading(false);
@@ -114,19 +141,27 @@ export default function Index() {
           keyExtractor={(item) => item.fields.id.toString()}
           bounces={false}
           showsVerticalScrollIndicator={false}
-          contentContainerClassName="flex gap-5 mt-8"
-          ListHeaderComponent={<SearchCity />}
+          contentContainerClassName="flex gap-5 mt-5"
+          ListHeaderComponent={<SearchCity handleSearch={setCity} />}
         />
       )}
     </SafeAreaView>
   );
 }
 
-const SearchCity = () => {
-  const [search, setSearch] = useState<string>();
+const SearchCity = ({
+  handleSearch,
+}: {
+  handleSearch: (text: string) => void;
+}) => {
+  const [citySearch, setCitySearch] = useState<string>();
+  const debounceSearch = useDebouncedCallback(
+    (text: string) => handleSearch(text),
+    500
+  );
 
-  const handleSearch = (text: string) => {
-    setSearch(text);
+  const handleOnSearch = () => {
+    debounceSearch(citySearch ?? "");
   };
 
   return (
@@ -134,8 +169,8 @@ const SearchCity = () => {
       <View className="flex-1 flex flex-row items-center justify-start z-50">
         <Image source={icons.search} className="size-5" />
         <TextInput
-          value={search}
-          onChangeText={handleSearch}
+          value={citySearch}
+          onChangeText={handleOnSearch}
           placeholder="Search for anything"
           className="text-sm font-rubik text-black-300 ml-2 flex-1"
         />
