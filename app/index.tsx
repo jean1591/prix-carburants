@@ -3,16 +3,13 @@ import * as Location from "expo-location";
 import {
   Fields,
   OpeningHours as OpeningHoursType,
-  Response,
+  PosResponse,
 } from "@/libs/pos.type";
 import { FlatList, ScrollView, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import mock from "./mock.json";
-
-const getUrl = (latitude: number, longitude: number) =>
-  `https://data.economie.gouv.fr/api/records/1.0/search/?dataset=prix-des-carburants-en-france-flux-instantane-v2&geofilter.distance=${latitude},${longitude},5000`;
+import { getPosByLatitudeAndLongitude } from "@/libs/getPos";
 
 const formatDistance = (distance: string): string => {
   const match = distance.match(/^\d+\.?\d*/);
@@ -49,10 +46,8 @@ const timeAgo = (dateString: string): string => {
 export default function Index() {
   const [location, setLocation] = useState<
     { latitude: number; longitude: number } | undefined
-  >();
-  const [pointsOfSale, setPointsOfSale] = useState<Response | undefined>(
-    mock as unknown as Response
-  );
+  >({ latitude: 43.4844836, longitude: -1.5473273 });
+  const [pointsOfSale, setPointsOfSale] = useState<PosResponse | undefined>();
 
   /* useEffect(() => {
     const getPermission = async () => {
@@ -72,23 +67,19 @@ export default function Index() {
     };
 
     getPermission();
-  }, []);
+  }, []); */
 
   useEffect(() => {
     const getData = async (latitude: number, longitude: number) => {
-      const url = getUrl(latitude, longitude);
+      const pos = await getPosByLatitudeAndLongitude(latitude, longitude);
 
-      const response = await fetch(url);
-      const data = (await response.json()) as Response;
-      console.log("🚀 ~ getData ~ data:", data);
-
-      setPointsOfSale(data);
+      setPointsOfSale(pos);
     };
 
     if (location && location.latitude && location.longitude) {
       getData(location.latitude, location.longitude);
     }
-  }, [location]); */
+  }, [location]);
 
   return (
     <SafeAreaView className="bg-white h-full px-5">
@@ -96,7 +87,7 @@ export default function Index() {
         <FlatList
           data={pointsOfSale.records}
           renderItem={({ item }) => <PointOfSale fields={item.fields} />}
-          keyExtractor={(item) => item.recordid}
+          keyExtractor={(item) => item.fields.id.toString()}
           bounces={false}
           showsVerticalScrollIndicator={false}
           contentContainerClassName="flex gap-5 mt-8"
@@ -109,6 +100,9 @@ export default function Index() {
 const PointOfSale = ({ fields }: { fields: Fields }) => {
   return (
     <View className="bg-primary-100 rounded-xl p-4">
+      <Text className="uppercase text-2xl font-rubik-bold tracking-tight leading-tight">
+        {fields.name}
+      </Text>
       <Text className="uppercase text-2xl font-rubik-bold tracking-tight leading-tight">
         {fields.adresse}
       </Text>

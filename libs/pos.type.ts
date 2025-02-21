@@ -1,4 +1,4 @@
-export interface Response {
+export interface PosResponse {
   nhits: number;
   parameters: Parameters;
   records: Record[];
@@ -22,6 +22,7 @@ export interface Record {
 }
 
 export interface Fields {
+  name?: string;
   carburants_rupture_temporaire?: string;
   geom: number[];
   gazole_prix: number;
@@ -82,4 +83,14 @@ export interface Jour {
 export interface Horaire {
   "@ouverture": string;
   "@fermeture": string;
+}
+
+export interface PosNameResponse {
+  total_count: number;
+  results: Result[];
+}
+
+export interface Result {
+  id: string;
+  brand: string;
 }
