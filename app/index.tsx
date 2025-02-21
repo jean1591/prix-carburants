@@ -1,15 +1,25 @@
 import * as Location from "expo-location";
 
 import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import {
   Fields,
   OpeningHours as OpeningHoursType,
   PosResponse,
 } from "@/libs/pos.type";
-import { FlatList, ScrollView, Text, View } from "react-native";
 import { useEffect, useState } from "react";
 
+import NoResults from "@/components/NoResults";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { getPosByLatitudeAndLongitude } from "@/libs/getPos";
+import icons from "@/constants/icons";
 
 const formatDistance = (distance: string): string => {
   const match = distance.match(/^\d+\.?\d*/);
@@ -44,6 +54,7 @@ const timeAgo = (dateString: string): string => {
 };
 
 export default function Index() {
+  const [loading, setLoading] = useState<boolean>(false);
   const [location, setLocation] = useState<
     { latitude: number; longitude: number } | undefined
   >({ latitude: 43.4844836, longitude: -1.5473273 });
@@ -77,8 +88,11 @@ export default function Index() {
     };
 
     if (location && location.latitude && location.longitude) {
+      setLoading(true);
       getData(location.latitude, location.longitude);
     }
+
+    setLoading(false);
   }, [location]);
 
   return (
@@ -86,20 +100,53 @@ export default function Index() {
       {pointsOfSale && (
         <FlatList
           data={pointsOfSale.records}
+          ListEmptyComponent={
+            loading ? (
+              <ActivityIndicator
+                size="large"
+                className="text-primary-300 mt-5"
+              />
+            ) : (
+              <NoResults />
+            )
+          }
           renderItem={({ item }) => <PointOfSale fields={item.fields} />}
           keyExtractor={(item) => item.fields.id.toString()}
           bounces={false}
           showsVerticalScrollIndicator={false}
           contentContainerClassName="flex gap-5 mt-8"
+          ListHeaderComponent={<SearchCity />}
         />
       )}
     </SafeAreaView>
   );
 }
 
+const SearchCity = () => {
+  const [search, setSearch] = useState<string>();
+
+  const handleSearch = (text: string) => {
+    setSearch(text);
+  };
+
+  return (
+    <View className="flex flex-row items-center justify-between w-full px-4 rounded-lg bg-accent-100 border border-primary-100 mt-8 py-2">
+      <View className="flex-1 flex flex-row items-center justify-start z-50">
+        <Image source={icons.search} className="size-5" />
+        <TextInput
+          value={search}
+          onChangeText={handleSearch}
+          placeholder="Search for anything"
+          className="text-sm font-rubik text-black-300 ml-2 flex-1"
+        />
+      </View>
+    </View>
+  );
+};
+
 const PointOfSale = ({ fields }: { fields: Fields }) => {
   return (
-    <View className="bg-primary-100 rounded-xl p-4">
+    <View className="bg-primary-100 rounded-xl p-4 mt-8">
       <Text className="uppercase text-2xl font-rubik-bold tracking-tight leading-tight">
         {fields.name}
       </Text>
