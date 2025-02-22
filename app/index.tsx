@@ -58,12 +58,19 @@ const timeAgo = (dateString: string): string => {
 export default function Index() {
   const [loading, setLoading] = useState<boolean>(false);
   const [city, setCity] = useState<string>();
+  /* const [location, setLocation] = useState<
+    { latitude: number; longitude: number } | undefined
+  >({ latitude: 43.4844836, longitude: -1.5473273 }); */
   const [location, setLocation] = useState<
     { latitude: number; longitude: number } | undefined
-  >({ latitude: 43.4844836, longitude: -1.5473273 });
+  >();
   const [pointsOfSale, setPointsOfSale] = useState<PosResponse | undefined>();
 
-  /* useEffect(() => {
+  const handleOnSearch = (text: string) => {
+    setCity(text);
+  };
+
+  useEffect(() => {
     const getPermission = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
 
@@ -77,15 +84,20 @@ export default function Index() {
         coords: { latitude, longitude },
       } = await Location.getCurrentPositionAsync({});
       setLocation({ latitude, longitude });
-      console.log("🚀 ~ permission ~ coordonates:", { latitude, longitude });
     };
 
     getPermission();
-  }, []); */
+  }, []);
 
   useEffect(() => {
     const getData = async (params: ValidParams) => {
       let pos: PosResponse | undefined = undefined;
+
+      if (params.city) {
+        const { city } = params;
+
+        pos = await getPos({ city });
+      }
 
       if (params.coordinates) {
         const {
@@ -95,14 +107,13 @@ export default function Index() {
         pos = await getPos({ coordinates: { latitude, longitude } });
       }
 
-      if (params.city) {
-        const { city } = params;
-
-        pos = await getPos({ city });
-      }
-
       setPointsOfSale(pos);
     };
+
+    if (city) {
+      setLoading(true);
+      getData({ city });
+    }
 
     if (location && location.latitude && location.longitude) {
       setLoading(true);
@@ -114,13 +125,8 @@ export default function Index() {
       });
     }
 
-    if (city) {
-      setLoading(true);
-      getData({ city });
-    }
-
     setLoading(false);
-  }, [location]);
+  }, [location, city]);
 
   return (
     <SafeAreaView className="bg-white h-full px-5">
@@ -142,44 +148,28 @@ export default function Index() {
           bounces={false}
           showsVerticalScrollIndicator={false}
           contentContainerClassName="flex gap-5 mt-5"
-          ListHeaderComponent={<SearchCity handleSearch={setCity} />}
+          ListHeaderComponent={
+            <View className="flex flex-row items-center justify-between w-full px-4 rounded-lg bg-accent-100 border border-primary-100 mt-8 py-2">
+              <View className="flex-1 flex flex-row items-center justify-start z-50">
+                <Image source={icons.search} className="size-5" />
+                <TextInput
+                  value={city}
+                  onChangeText={handleOnSearch}
+                  placeholder="Rechercher une ville"
+                  className="text-sm font-rubik text-black-300 ml-2 flex-1"
+                />
+              </View>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
   );
 }
 
-const SearchCity = ({
-  handleSearch,
-}: {
-  handleSearch: (text: string) => void;
-}) => {
-  const [citySearch, setCitySearch] = useState<string>();
-  const debounceSearch = useDebouncedCallback(
-    (text: string) => handleSearch(text),
-    500
-  );
-
-  const handleOnSearch = () => {
-    debounceSearch(citySearch ?? "");
-  };
-
-  return (
-    <View className="flex flex-row items-center justify-between w-full px-4 rounded-lg bg-accent-100 border border-primary-100 mt-8 py-2">
-      <View className="flex-1 flex flex-row items-center justify-start z-50">
-        <Image source={icons.search} className="size-5" />
-        <TextInput
-          value={citySearch}
-          onChangeText={handleOnSearch}
-          placeholder="Search for anything"
-          className="text-sm font-rubik text-black-300 ml-2 flex-1"
-        />
-      </View>
-    </View>
-  );
-};
-
 const PointOfSale = ({ fields }: { fields: Fields }) => {
+  const prices = JSON.parse(fields.prix);
+
   return (
     <View className="bg-primary-100 rounded-xl p-4 mt-8">
       <Text className="uppercase text-2xl font-rubik-bold tracking-tight leading-tight">
@@ -193,23 +183,29 @@ const PointOfSale = ({ fields }: { fields: Fields }) => {
         <Text className="mt-1 text-lg font-rubik-bold tracking-tight leading-tight">
           {fields.ville} {fields.cp}
         </Text>
-        <Text className="mt-1 text-lg tracking-tight leading-tight">
-          {formatDistance(fields.dist)}
-        </Text>
+        {fields.dist && (
+          <Text className="mt-1 text-lg tracking-tight leading-tight">
+            {formatDistance(fields.dist)}
+          </Text>
+        )}
       </View>
 
-      <View className="w-full items-center justify-start mt-8 flex flex-row gap-2 flex-wrap">
-        {JSON.parse(fields.prix).map((prix) => (
-          <View
-            key={prix["@id"]}
-            className="basis-1/3 flex-1 bg-primary-200 rounded-xl p-4"
-          >
-            <Text className="text-xl font-rubik-bold">{prix["@valeur"]}€</Text>
-            <Text className="text-sm">{prix["@nom"]}</Text>
-            <PriceUpdate updatedAt={prix["@maj"]} />
-          </View>
-        ))}
-      </View>
+      {prices && Array.isArray(prices) && (
+        <View className="w-full items-center justify-start mt-8 flex flex-row gap-2 flex-wrap">
+          {prices.map((price) => (
+            <View
+              key={price["@id"]}
+              className="basis-1/3 flex-1 bg-primary-200 rounded-xl p-4"
+            >
+              <Text className="text-xl font-rubik-bold">
+                {price["@valeur"]}€
+              </Text>
+              <Text className="text-sm">{price["@nom"]}</Text>
+              <PriceUpdate updatedAt={price["@maj"]} />
+            </View>
+          ))}
+        </View>
+      )}
 
       <OpeningHours openingHours={fields.horaires} />
 

@@ -34,9 +34,9 @@ export const getPos = async (params: ValidParams): Promise<PosResponse> => {
     throw new Error("URL was not defined by either a city or coordinates");
   }
 
-  /* const response = await fetch(url);
-  const data = (await response.json()) as PosResponse; */
-  const data = posMock as unknown as PosResponse;
+  const response = await fetch(url);
+  const data = (await response.json()) as PosResponse;
+  // const data = posMock as unknown as PosResponse;
 
   const hydratedPos = await Promise.all(
     data.records.map(async (record) => ({
@@ -54,9 +54,9 @@ export const getPos = async (params: ValidParams): Promise<PosResponse> => {
 const getPosName = async (posId: number): Promise<string> => {
   const url = getPosNameUrl(posId);
 
-  /* const response = await fetch(url);
-  const data = (await response.json()) as PosNameResponse; */
-  const data = posNameMock as PosNameResponse;
+  const response = await fetch(url);
+  const data = (await response.json()) as PosNameResponse;
+  // const data = posNameMock as PosNameResponse;
 
   const name = data.results[0].brand;
 
